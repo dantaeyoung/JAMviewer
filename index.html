@@ -107,6 +107,20 @@
         .page-bar.artist-highlight {
             background: #a90;
         }
+        .search-marker {
+            position: absolute;
+            bottom: 0;
+            width: 3px;
+            height: 100%;
+            background: #e87d2a;
+            cursor: pointer;
+            z-index: 2;
+        }
+        .search-marker:hover {
+            background: #ff9a4a;
+            width: 5px;
+            margin-left: -1px;
+        }
         .page-indicator {
             position: absolute;
             top: 0;
@@ -118,12 +132,64 @@
         }
         .search-input {
             padding: 6px 12px;
-            border: 1px solid #444;
+            border: 1px solid #a85a2a;
             border-radius: 4px;
-            background: #333;
-            color: #fff;
+            background: #3a2a1a;
+            color: #f0d0a0;
             font-size: 14px;
             width: 200px;
+        }
+        .search-input::placeholder {
+            color: #a07050;
+        }
+        .search-input:focus {
+            outline: none;
+            border-color: #e87d2a;
+            box-shadow: 0 0 4px rgba(232, 125, 42, 0.4);
+        }
+        .search-btn {
+            background: #a85a2a;
+            border: none;
+            color: #fff;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .search-btn:hover {
+            background: #c86a3a;
+        }
+        .search-box {
+            position: relative;
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+        .search-input-wrapper {
+            position: relative;
+        }
+        .search-clear {
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: #a07050;
+            font-size: 16px;
+            cursor: pointer;
+            padding: 0 4px;
+            line-height: 1;
+            display: none;
+        }
+        .search-clear:hover {
+            color: #e87d2a;
+        }
+        .search-clear.visible {
+            display: block;
+        }
+        .search-input-wrapper .search-input {
+            padding-right: 28px;
         }
         .container {
             display: flex;
@@ -131,8 +197,8 @@
         }
         /* Left panel - Matches */
         .matches-panel {
-            width: 280px;
-            min-width: 280px;
+            width: 240px;
+            min-width: 240px;
             background: #1e1e1e;
             border-right: 1px solid #444;
             display: flex;
@@ -222,8 +288,10 @@
             box-shadow: 0 4px 20px rgba(0,0,0,0.5);
         }
         .highlight {
-            background: #5a5a00;
+            background: #a85a2a;
             color: #fff;
+            border-radius: 2px;
+            padding: 0 2px;
         }
         .artist-match {
             background: #2d5a2d;
@@ -255,8 +323,11 @@
             <button id="nextBtn" onclick="nextPage()">Next &rarr;</button>
         </div>
         <div class="search-box">
-            <input type="text" id="searchInput" class="search-input" placeholder="Search text..." onkeyup="handleSearchKey(event)">
-            <button onclick="searchText()">Search</button>
+            <div class="search-input-wrapper">
+                <input type="text" id="searchInput" class="search-input" placeholder="Search text..." onkeyup="handleSearchKey(event)" oninput="updateClearButton()">
+                <button class="search-clear" id="searchClear" onclick="clearSearch()">&times;</button>
+            </div>
+            <button class="search-btn" onclick="searchText()">Search</button>
         </div>
     </div>
     <div class="page-nav-bar">
@@ -293,6 +364,8 @@
         let maxMatchCount = 1;
         let artistToPages = {}; // Map of matchedForm -> [page numbers]
         let selectedArtistForm = null;
+        let allPageTexts = {}; // Cache of all page texts
+        let searchResultPages = new Set(); // Pages matching current search
 
         function padPage(num) {
             return String(num).padStart(3, '0');
@@ -461,10 +534,11 @@
 
         async function loadPage(pageNum, keepArtistSelection = false) {
             currentPage = pageNum;
-            currentSearchTerm = '';
             if (!keepArtistSelection) {
                 selectedArtistForm = null; // Clear artist selection when changing pages
             }
+            // Note: search state (currentSearchTerm, searchResultPages) is preserved
+            // until explicitly cleared via clearSearch()
             localStorage.setItem('jamViewerPage', pageNum);
             document.getElementById('pageInput').value = pageNum;
             document.getElementById('prevBtn').disabled = pageNum <= 1;
@@ -492,7 +566,15 @@
                 updateMatchesPanel(matches);
 
                 // Apply highlighting
-                if (matches.length > 0) {
+                const pageHasSearchResult = currentSearchTerm && searchResultPages.has(pageNum);
+                if (pageHasSearchResult) {
+                    // Apply search highlighting
+                    textEl.innerHTML = highlightText(text, currentSearchTerm);
+                    setTimeout(() => {
+                        const target = document.getElementById('search-match-target');
+                        if (target) target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }, 50);
+                } else if (matches.length > 0) {
                     if (selectedArtistForm) {
                         // Highlight with selected artist in gold
                         textEl.innerHTML = highlightArtistMatchesWithSelection(text, matches, selectedArtistForm);
@@ -518,10 +600,17 @@
             }
         }
 
-        function highlightText(text, term) {
+        function highlightText(text, term, addScrollTarget = true) {
             if (!term) return escapeHtml(text);
             const regex = new RegExp(`(${escapeRegex(term)})`, 'gi');
-            return escapeHtml(text).replace(regex, '<span class="highlight">$1</span>');
+            let first = true;
+            return escapeHtml(text).replace(regex, (match) => {
+                if (addScrollTarget && first) {
+                    first = false;
+                    return `<span id="search-match-target" class="highlight">${match}</span>`;
+                }
+                return `<span class="highlight">${match}</span>`;
+            });
         }
 
         function escapeHtml(text) {
@@ -556,8 +645,32 @@
         function searchText() {
             currentSearchTerm = document.getElementById('searchInput').value;
             const textEl = document.getElementById('pageText');
+            updateClearButton();
+
+            // Search across all pages
+            searchResultPages = new Set();
+            if (currentSearchTerm) {
+                const term = currentSearchTerm.toLowerCase();
+                for (let i = 1; i <= totalPages; i++) {
+                    const text = allPageTexts[i] || '';
+                    if (text.toLowerCase().includes(term)) {
+                        searchResultPages.add(i);
+                    }
+                }
+                console.log(`Found "${currentSearchTerm}" in ${searchResultPages.size} pages`);
+            }
+
+            // Update timeline bar
+            renderPageBars();
+
+            // Highlight current page
             if (currentSearchTerm) {
                 textEl.innerHTML = highlightText(currentPageText, currentSearchTerm);
+                // Scroll to first result
+                setTimeout(() => {
+                    const target = document.getElementById('search-match-target');
+                    if (target) target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }, 50);
             } else {
                 // Restore artist highlights
                 const matches = findMatches(currentPageText);
@@ -575,6 +688,34 @@
             }
         }
 
+        function updateClearButton() {
+            const input = document.getElementById('searchInput');
+            const clearBtn = document.getElementById('searchClear');
+            clearBtn.classList.toggle('visible', input.value.length > 0);
+        }
+
+        function clearSearch() {
+            const input = document.getElementById('searchInput');
+            input.value = '';
+            currentSearchTerm = '';
+            searchResultPages = new Set();
+            updateClearButton();
+            renderPageBars();
+
+            // Restore artist highlights on current page
+            const textEl = document.getElementById('pageText');
+            const matches = findMatches(currentPageText);
+            if (matches.length > 0) {
+                if (selectedArtistForm) {
+                    textEl.innerHTML = highlightArtistMatchesWithSelection(currentPageText, matches, selectedArtistForm);
+                } else {
+                    textEl.innerHTML = highlightArtistMatches(currentPageText, matches);
+                }
+            } else {
+                textEl.textContent = currentPageText;
+            }
+        }
+
         // Keyboard navigation
         document.addEventListener('keydown', (e) => {
             if (e.target.tagName === 'INPUT') return;
@@ -582,7 +723,32 @@
             if (e.key === 'ArrowRight') nextPage();
         });
 
-        // Pre-compute matches for all pages
+        // Load precomputed data (generated by build_data.py)
+        async function loadPrecomputedData() {
+            try {
+                console.log('Loading precomputed data...');
+                const response = await fetch('precomputed_data.json?v=' + Date.now());
+                const data = await response.json();
+
+                // Convert pageTexts keys from strings to numbers
+                for (const [key, value] of Object.entries(data.pageTexts)) {
+                    allPageTexts[parseInt(key)] = value;
+                }
+
+                pageMatchCounts = data.pageMatchCounts;
+                artistToPages = data.artistToPages;
+                maxMatchCount = data.maxMatchCount;
+
+                console.log(`Loaded precomputed data. Max matches: ${maxMatchCount}`);
+                renderPageBars();
+                return true;
+            } catch (e) {
+                console.warn('Precomputed data not found, computing on-the-fly...', e);
+                return false;
+            }
+        }
+
+        // Fallback: Pre-compute matches for all pages if precomputed data is not available
         async function precomputeAllMatches() {
             console.log('Pre-computing matches for all pages...');
             const counts = [];
@@ -592,6 +758,7 @@
                 try {
                     const response = await fetch(`text/page-${i}.txt`);
                     const text = await response.text();
+                    allPageTexts[i] = text; // Cache the text
                     const matches = findMatches(text);
                     counts.push(matches.length);
 
@@ -621,20 +788,61 @@
 
         function renderPageBars() {
             const container = document.getElementById('pageBars');
-            const highlightedPages = selectedArtistForm && artistToPages[selectedArtistForm]
+            const artistHighlightedPages = selectedArtistForm && artistToPages[selectedArtistForm]
                 ? new Set(artistToPages[selectedArtistForm])
                 : new Set();
 
             container.innerHTML = pageMatchCounts.map((count, i) => {
                 const pageNum = i + 1;
+                const hasArtist = artistHighlightedPages.has(pageNum);
                 const height = count > 0 ? Math.max(30, (count / maxMatchCount) * 100) : 0;
                 const classes = ['page-bar'];
                 if (count === 0) classes.push('no-matches');
-                if (highlightedPages.has(pageNum)) classes.push('artist-highlight');
-                return `<div class="${classes.join(' ')}" data-page="${pageNum}" style="height: ${height}%" title="Page ${pageNum}: ${count} matches"></div>`;
+                if (hasArtist) classes.push('artist-highlight');
+                return `<div class="${classes.join(' ')}" data-page="${pageNum}" style="height: ${height}%" title="Page ${pageNum}: ${count} artist matches"></div>`;
             }).join('');
+
+            // Add search markers as orange lines
+            renderSearchMarkers();
             updatePageIndicator();
         }
+
+        function renderSearchMarkers() {
+            // Remove existing search markers
+            document.querySelectorAll('.search-marker').forEach(el => el.remove());
+
+            if (searchResultPages.size === 0) return;
+
+            const slider = document.getElementById('pageSlider');
+            const sliderRect = slider.getBoundingClientRect();
+
+            searchResultPages.forEach(pageNum => {
+                const bar = document.querySelector(`.page-bar[data-page="${pageNum}"]`);
+                if (bar) {
+                    const barRect = bar.getBoundingClientRect();
+                    const marker = document.createElement('div');
+                    marker.className = 'search-marker';
+                    marker.dataset.page = pageNum;
+                    marker.style.left = `${barRect.left - sliderRect.left + barRect.width / 2 - 1}px`;
+                    marker.title = `Page ${pageNum}: search result`;
+                    marker.onmousedown = (e) => {
+                        e.stopPropagation();
+                    };
+                    marker.onclick = (e) => {
+                        e.stopPropagation();
+                        loadPage(pageNum, false);
+                    };
+                    slider.appendChild(marker);
+                }
+            });
+        }
+
+        // Re-render markers on resize
+        window.addEventListener('resize', () => {
+            if (searchResultPages.size > 0) {
+                renderSearchMarkers();
+            }
+        });
 
         function updatePageIndicator() {
             const indicator = document.getElementById('pageIndicator');
@@ -658,15 +866,15 @@
             // Check if we clicked directly on a bar
             if (event.target.classList.contains('page-bar')) {
                 const page = parseInt(event.target.dataset.page);
-                const isHighlighted = event.target.classList.contains('artist-highlight');
+                const isArtistHighlighted = event.target.classList.contains('artist-highlight');
                 if (page >= 1 && page <= totalPages) {
-                    // Keep artist selection if clicking on a highlighted bar
-                    loadPage(page, isHighlighted);
+                    // Keep artist selection if clicking on an artist-highlighted bar
+                    loadPage(page, isArtistHighlighted);
                     return;
                 }
             }
 
-            // Otherwise calculate from position - clears selection
+            // Otherwise calculate from position
             const slider = document.getElementById('pageSlider');
             const rect = slider.getBoundingClientRect();
             const x = event.clientX - rect.left;
@@ -708,8 +916,11 @@
             await loadArtistsSpaceData();
             const savedPage = parseInt(localStorage.getItem('jamViewerPage')) || 1;
             loadPage(savedPage);
-            // Pre-compute matches in background
-            precomputeAllMatches();
+            // Try to load precomputed data, fall back to computing
+            const loaded = await loadPrecomputedData();
+            if (!loaded) {
+                precomputeAllMatches();
+            }
         })();
     </script>
 </body>
