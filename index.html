@@ -17,31 +17,55 @@
             height: 100vh;
             overflow: hidden;
         }
-        .header {
+        /* Header Layer 1: Title and Tabs */
+        .header-primary {
             background: #2a2a2a;
-            padding: 12px 20px;
+            padding: 12px 24px;
             display: flex;
             align-items: center;
             justify-content: space-between;
             border-bottom: 1px solid #444;
         }
-        .header h1 {
+        .header-primary h1 {
             font-size: 18px;
             font-weight: 500;
+        }
+        .header-controls {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        /* Header Layer 2: Timeline */
+        .header-secondary {
+            background: #222;
+            padding: 8px 20px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            border-bottom: 1px solid #444;
         }
         .nav {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 6px;
+            flex-shrink: 0;
+        }
+        .page-info {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            white-space: nowrap;
+            font-size: 16px;
+            color: #aaa;
         }
         .nav button {
             background: #444;
             border: none;
             color: #fff;
-            padding: 8px 16px;
+            padding: 6px 10px;
             border-radius: 4px;
             cursor: pointer;
-            font-size: 14px;
+            font-size: 12px;
         }
         .nav button:hover {
             background: #555;
@@ -51,39 +75,94 @@
             color: #666;
             cursor: not-allowed;
         }
-        .page-info {
-            font-size: 14px;
-            color: #aaa;
-            min-width: 100px;
-            text-align: center;
-        }
         .page-input {
             width: 60px;
-            padding: 6px 8px;
+            padding: 4px 6px;
             border: 1px solid #444;
             border-radius: 4px;
             background: #333;
             color: #fff;
-            font-size: 14px;
+            font-size: 16px;
             text-align: center;
+        }
+        /* Timeline bar */
+        .page-slider-container {
+            flex: 1;
+            position: relative;
+            height: 36px;
+            background: #1a1a1a;
+            border-radius: 4px;
+            cursor: pointer;
         }
         .search-box {
             display: flex;
             gap: 8px;
+            flex-shrink: 0;
         }
-        /* Page navigator with match density */
-        .page-nav-bar {
-            background: #222;
-            border-bottom: 1px solid #444;
-            padding: 8px 20px;
-            position: relative;
-        }
-        .page-slider-container {
-            position: relative;
-            height: 40px;
+        /* Index panel - all matches */
+        .index-panel {
+            width: 180px;
+            min-width: 180px;
             background: #1a1a1a;
-            border-radius: 4px;
+            border-right: 1px solid #444;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .index-header {
+            background: #333;
+            padding: 12px 16px;
+            font-weight: 500;
+            font-size: 14px;
+            color: #aaa;
+            flex-shrink: 0;
+            border-bottom: 1px solid #444;
+        }
+        .index-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 8px;
+        }
+        .index-item {
+            padding: 4px 8px;
+            font-size: 12px;
+            color: #888;
             cursor: pointer;
+            border-radius: 3px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .index-item:hover {
+            background: #2a2a2a;
+            color: #aaa;
+        }
+        .index-item.selected {
+            background: #3a3a00;
+            color: #da0;
+        }
+        .index-item.selected .index-bar-fill {
+            background: #a90;
+        }
+        .index-bar {
+            width: 20px;
+            height: 8px;
+            background: transparent;
+            border-radius: 2px;
+            flex-shrink: 0;
+            overflow: hidden;
+        }
+        .index-bar-fill {
+            height: 100%;
+            background: #2d5a2d;
+            border-radius: 2px;
+            margin-left: auto;
+        }
+        .index-name {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            flex: 1;
         }
         .page-bars {
             display: flex;
@@ -160,40 +239,13 @@
             background: #c86a3a;
         }
         .search-box {
-            position: relative;
             display: flex;
             gap: 8px;
             align-items: center;
         }
-        .search-input-wrapper {
-            position: relative;
-        }
-        .search-clear {
-            position: absolute;
-            right: 8px;
-            top: 50%;
-            transform: translateY(-50%);
-            background: none;
-            border: none;
-            color: #a07050;
-            font-size: 16px;
-            cursor: pointer;
-            padding: 0 4px;
-            line-height: 1;
-            display: none;
-        }
-        .search-clear:hover {
-            color: #e87d2a;
-        }
-        .search-clear.visible {
-            display: block;
-        }
-        .search-input-wrapper .search-input {
-            padding-right: 28px;
-        }
         .container {
             display: flex;
-            height: calc(100vh - 114px);
+            height: calc(100vh - 94px);
         }
         /* Left panel - Matches */
         .matches-panel {
@@ -266,6 +318,7 @@
             white-space: pre-wrap;
             word-wrap: break-word;
             color: #d4d4d4;
+            max-width: 80%;
         }
         .loading {
             color: #888;
@@ -310,33 +363,116 @@
         .artist-match.selected:hover {
             background: #9a8a10;
         }
+        /* Selected artist badge */
+        .artist-badge {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: #5a4a00;
+            color: #ffd;
+            padding: 5px 12px;
+            border-radius: 4px;
+            font-size: 13px;
+            visibility: hidden;
+        }
+        .artist-badge.visible {
+            visibility: visible;
+        }
+        .artist-badge-close {
+            background: none;
+            border: none;
+            color: #ffd;
+            font-size: 16px;
+            cursor: pointer;
+            padding: 0 2px;
+            line-height: 1;
+            opacity: 0.7;
+        }
+        .artist-badge-close:hover {
+            opacity: 1;
+        }
+        /* Search badge */
+        .search-badge {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: #5a3a1a;
+            color: #f0d0a0;
+            padding: 5px 12px;
+            border-radius: 4px;
+            font-size: 13px;
+            visibility: hidden;
+        }
+        .search-badge.visible {
+            visibility: visible;
+        }
+        .search-badge-close {
+            background: none;
+            border: none;
+            color: #f0d0a0;
+            font-size: 16px;
+            cursor: pointer;
+            padding: 0 2px;
+            line-height: 1;
+            opacity: 0.7;
+        }
+        .search-badge-close:hover {
+            opacity: 1;
+        }
+        /* Pan/zoom image */
+        .image-panel {
+            overflow: hidden;
+            position: relative;
+        }
+        .image-panel img {
+            cursor: grab;
+        }
     </style>
+    <script src="https://unpkg.com/@panzoom/panzoom@4.5.1/dist/panzoom.min.js"></script>
 </head>
 <body>
-    <div class="header">
-        <h1>Artists in JAM Catalogue who were part of Artists Space</h1>
-        <div class="nav">
-            <button id="prevBtn" onclick="prevPage()">&larr; Previous</button>
-            <span class="page-info">
-                Page <input type="number" id="pageInput" class="page-input" min="1" max="159" value="1" onchange="goToPage(this.value)"> of 159
-            </span>
-            <button id="nextBtn" onclick="nextPage()">Next &rarr;</button>
-        </div>
-        <div class="search-box">
-            <div class="search-input-wrapper">
-                <input type="text" id="searchInput" class="search-input" placeholder="Search text..." onkeyup="handleSearchKey(event)" oninput="updateClearButton()">
-                <button class="search-clear" id="searchClear" onclick="clearSearch()">&times;</button>
+    <!-- Header -->
+    <div class="header-primary">
+        <h1>JAM Catalogue × Artists Space</h1>
+        <div class="header-controls">
+            <div class="artist-badge" id="artistBadge">
+                <span id="artistBadgeName"></span>
+                <button class="artist-badge-close" onclick="clearArtistSelection()">&times;</button>
             </div>
-            <button class="search-btn" onclick="searchText()">Search</button>
+            <div class="search-badge" id="searchBadge">
+                <span id="searchBadgeTerm"></span>
+                <button class="search-badge-close" onclick="clearSearch()">&times;</button>
+            </div>
+            <div class="nav">
+                <button id="prevBtn" onclick="prevPage()">&larr;</button>
+                <span class="page-info">
+                    <input type="number" id="pageInput" class="page-input" min="1" max="159" value="1" onchange="goToPage(this.value)"> / 159
+                </span>
+                <button id="nextBtn" onclick="nextPage()">&rarr;</button>
+            </div>
+            <div class="search-box">
+                <input type="text" id="searchInput" class="search-input" placeholder="Search text..." onkeyup="handleSearchKey(event)">
+                <button class="search-btn" onclick="searchText()">Search</button>
+            </div>
         </div>
     </div>
-    <div class="page-nav-bar">
+
+    <!-- Timeline -->
+    <div class="header-secondary">
         <div class="page-slider-container" id="pageSlider" onclick="handleSliderClick(event)" onmousemove="handleSliderHover(event)">
             <div class="page-bars" id="pageBars"></div>
             <div class="page-indicator" id="pageIndicator"></div>
         </div>
     </div>
+
+    <!-- Main Content -->
     <div class="container">
+        <!-- All Matches Index -->
+        <div class="index-panel" id="indexPanel">
+            <div class="index-header">All Matches</div>
+            <div class="index-list" id="indexList"></div>
+        </div>
+        <!-- Page Matches -->
         <div class="matches-panel">
             <div id="matchesHeader" class="matches-header no-matches">
                 Artists Space Matches (0)
@@ -348,7 +484,7 @@
         <div class="text-panel">
             <pre id="pageText" class="loading">Loading...</pre>
         </div>
-        <div class="image-panel">
+        <div class="image-panel" id="imagePanel">
             <img id="pageImage" src="" alt="PDF Page">
         </div>
     </div>
@@ -460,7 +596,7 @@
             const list = document.getElementById('matchesList');
 
             currentMatches = matches;
-            header.textContent = `Artists Space Matches (${matches.length})`;
+            header.textContent = `Matching on this page (${matches.length})`;
             header.className = matches.length > 0 ? 'matches-header' : 'matches-header no-matches';
 
             if (matches.length === 0) {
@@ -487,17 +623,36 @@
 
             // Update selected artist and re-render page bars
             selectedArtistForm = form;
+
+            // Find the original name for this form
+            const match = currentMatches.find(m => m.matchedForm === form);
+            updateArtistBadge(match ? match.original : form);
+
+            // Sync index panel selection
+            document.querySelectorAll('.index-item').forEach(el => {
+                el.classList.toggle('selected', el.dataset.form === form);
+            });
+
             renderPageBars();
 
             // Re-highlight all matches, with the selected one in gold
             const textEl = document.getElementById('pageText');
             textEl.innerHTML = highlightArtistMatchesWithSelection(currentPageText, currentMatches, form);
 
-            // Scroll to the selected match
+            // Scroll to the selected match within text panel only
             setTimeout(() => {
                 const target = document.getElementById('artist-match-target');
-                if (target) target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                if (target) scrollToTargetInTextPanel(target, 'smooth');
             }, 50);
+        }
+
+        function scrollToTargetInTextPanel(target, behavior = 'smooth') {
+            const textPanel = document.querySelector('.text-panel');
+            if (!textPanel || !target) return;
+            const panelRect = textPanel.getBoundingClientRect();
+            const targetRect = target.getBoundingClientRect();
+            const scrollTop = textPanel.scrollTop + (targetRect.top - panelRect.top) - (panelRect.height / 2);
+            textPanel.scrollTo({ top: scrollTop, behavior: behavior });
         }
 
         function highlightArtistMatchesWithSelection(text, matches, selectedForm) {
@@ -532,13 +687,11 @@
             return s.replace(/'/g, "\\'").replace(/"/g, '&quot;');
         }
 
-        async function loadPage(pageNum, keepArtistSelection = false) {
+        async function loadPage(pageNum, instantScroll = false) {
             currentPage = pageNum;
-            if (!keepArtistSelection) {
-                selectedArtistForm = null; // Clear artist selection when changing pages
-            }
-            // Note: search state (currentSearchTerm, searchResultPages) is preserved
-            // until explicitly cleared via clearSearch()
+            const scrollBehavior = instantScroll ? 'instant' : 'smooth';
+            // Note: artist selection and search state are preserved
+            // until explicitly cleared via clearArtistSelection() or clearSearch()
             localStorage.setItem('jamViewerPage', pageNum);
             document.getElementById('pageInput').value = pageNum;
             document.getElementById('prevBtn').disabled = pageNum <= 1;
@@ -548,7 +701,10 @@
 
             // Load image
             const img = document.getElementById('pageImage');
-            img.src = `pages/page-${padPage(pageNum)}.jpg`;
+            const imgSrc = `pages/page-${padPage(pageNum)}.jpg`;
+            img.src = imgSrc;
+            // Reset pan/zoom when changing pages
+            resetImageTransform();
 
             // Load text
             const textEl = document.getElementById('pageText');
@@ -572,7 +728,7 @@
                     textEl.innerHTML = highlightText(text, currentSearchTerm);
                     setTimeout(() => {
                         const target = document.getElementById('search-match-target');
-                        if (target) target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        if (target) scrollToTargetInTextPanel(target, scrollBehavior);
                     }, 50);
                 } else if (matches.length > 0) {
                     if (selectedArtistForm) {
@@ -585,7 +741,7 @@
                         // Scroll to the selected artist's first occurrence
                         setTimeout(() => {
                             const target = document.getElementById('artist-match-target');
-                            if (target) target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            if (target) scrollToTargetInTextPanel(target, scrollBehavior);
                         }, 50);
                     } else {
                         textEl.innerHTML = highlightArtistMatches(text, matches);
@@ -643,43 +799,44 @@
         }
 
         function searchText() {
-            currentSearchTerm = document.getElementById('searchInput').value;
+            const input = document.getElementById('searchInput');
+            const term = input.value.trim();
+            if (!term) return;
+
+            currentSearchTerm = term;
+            input.value = ''; // Clear input
+            updateSearchBadge(term); // Show badge
+
             const textEl = document.getElementById('pageText');
-            updateClearButton();
+
+            // Clear artist selection when searching
+            selectedArtistForm = null;
+            updateArtistBadge(null);
+            document.querySelectorAll('.match-item').forEach(el => {
+                el.classList.remove('selected');
+            });
 
             // Search across all pages
             searchResultPages = new Set();
-            if (currentSearchTerm) {
-                const term = currentSearchTerm.toLowerCase();
-                for (let i = 1; i <= totalPages; i++) {
-                    const text = allPageTexts[i] || '';
-                    if (text.toLowerCase().includes(term)) {
-                        searchResultPages.add(i);
-                    }
+            const termLower = term.toLowerCase();
+            for (let i = 1; i <= totalPages; i++) {
+                const text = allPageTexts[i] || '';
+                if (text.toLowerCase().includes(termLower)) {
+                    searchResultPages.add(i);
                 }
-                console.log(`Found "${currentSearchTerm}" in ${searchResultPages.size} pages`);
             }
+            console.log(`Found "${term}" in ${searchResultPages.size} pages`);
 
             // Update timeline bar
             renderPageBars();
 
             // Highlight current page
-            if (currentSearchTerm) {
-                textEl.innerHTML = highlightText(currentPageText, currentSearchTerm);
-                // Scroll to first result
-                setTimeout(() => {
-                    const target = document.getElementById('search-match-target');
-                    if (target) target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                }, 50);
-            } else {
-                // Restore artist highlights
-                const matches = findMatches(currentPageText);
-                if (matches.length > 0) {
-                    textEl.innerHTML = highlightArtistMatches(currentPageText, matches);
-                } else {
-                    textEl.textContent = currentPageText;
-                }
-            }
+            textEl.innerHTML = highlightText(currentPageText, currentSearchTerm);
+            // Scroll to first result
+            setTimeout(() => {
+                const target = document.getElementById('search-match-target');
+                if (target) scrollToTargetInTextPanel(target, 'smooth');
+            }, 50);
         }
 
         function handleSearchKey(event) {
@@ -688,18 +845,49 @@
             }
         }
 
-        function updateClearButton() {
-            const input = document.getElementById('searchInput');
-            const clearBtn = document.getElementById('searchClear');
-            clearBtn.classList.toggle('visible', input.value.length > 0);
+        function updateArtistBadge(name) {
+            const badge = document.getElementById('artistBadge');
+            const badgeName = document.getElementById('artistBadgeName');
+            badgeName.textContent = name || '';
+            badge.classList.toggle('visible', !!name);
+        }
+
+        function updateSearchBadge(term) {
+            const badge = document.getElementById('searchBadge');
+            const badgeTerm = document.getElementById('searchBadgeTerm');
+            badgeTerm.textContent = term ? `"${term}"` : '';
+            badge.classList.toggle('visible', !!term);
+        }
+
+        function clearArtistSelection() {
+            selectedArtistForm = null;
+            updateArtistBadge(null);
+            renderPageBars();
+
+            // Re-render current page without artist selection
+            const matches = findMatches(currentPageText);
+            const textEl = document.getElementById('pageText');
+            if (currentSearchTerm && searchResultPages.has(currentPage)) {
+                textEl.innerHTML = highlightText(currentPageText, currentSearchTerm);
+            } else if (matches.length > 0) {
+                textEl.innerHTML = highlightArtistMatches(currentPageText, matches);
+            } else {
+                textEl.textContent = currentPageText;
+            }
+
+            // Clear selection in matches panel and index panel
+            document.querySelectorAll('.match-item').forEach(el => {
+                el.classList.remove('selected');
+            });
+            document.querySelectorAll('.index-item').forEach(el => {
+                el.classList.remove('selected');
+            });
         }
 
         function clearSearch() {
-            const input = document.getElementById('searchInput');
-            input.value = '';
             currentSearchTerm = '';
             searchResultPages = new Set();
-            updateClearButton();
+            updateSearchBadge(null);
             renderPageBars();
 
             // Restore artist highlights on current page
@@ -723,6 +911,57 @@
             if (e.key === 'ArrowRight') nextPage();
         });
 
+        // Render the all-matches index in the left panel
+        function renderIndexList() {
+            const container = document.getElementById('indexList');
+
+            // Get all unique artists with their pages
+            const artistEntries = Object.entries(artistToPages)
+                .map(([form, pages]) => {
+                    const entry = artistsSpaceData.find(e => e.forms.includes(form));
+                    return {
+                        name: entry ? entry.original : form,
+                        form: form,
+                        pages: pages.sort((a, b) => a - b)
+                    };
+                })
+                .sort((a, b) => a.name.localeCompare(b.name));
+
+            // Find max page count for scaling bars
+            const maxPages = Math.max(...artistEntries.map(a => a.pages.length), 1);
+
+            container.innerHTML = artistEntries.map(artist => {
+                // Use square root scale to make small differences visible while compressing outliers
+                const barPercent = Math.max(10, (Math.sqrt(artist.pages.length) / Math.sqrt(maxPages)) * 100);
+                return `
+                <div class="index-item" data-form="${escapeAttr(artist.form)}" onclick="selectArtistFromIndex('${escapeAttr(artist.form)}')" title="${escapeHtml(artist.name)} (${artist.pages.length} pages: ${artist.pages.join(', ')})">
+                    <div class="index-bar"><div class="index-bar-fill" style="width: ${barPercent}%"></div></div>
+                    <span class="index-name">${escapeHtml(artist.name)}</span>
+                </div>
+            `}).join('');
+
+            // Update header with count
+            document.querySelector('.index-header').textContent = `All Matches (${artistEntries.length})`;
+        }
+
+        function selectArtistFromIndex(form) {
+            selectedArtistForm = form;
+            const entry = artistsSpaceData.find(e => e.forms.includes(form));
+            updateArtistBadge(entry ? entry.original : form);
+            renderPageBars();
+
+            // Update index selection
+            document.querySelectorAll('.index-item').forEach(el => {
+                el.classList.toggle('selected', el.dataset.form === form);
+            });
+
+            // Go to first page with this artist (instant scroll, no animation)
+            const pages = artistToPages[form];
+            if (pages && pages.length > 0) {
+                loadPage(pages[0], true);
+            }
+        }
+
         // Load precomputed data (generated by build_data.py)
         async function loadPrecomputedData() {
             try {
@@ -741,6 +980,7 @@
 
                 console.log(`Loaded precomputed data. Max matches: ${maxMatchCount}`);
                 renderPageBars();
+                renderIndexList();
                 return true;
             } catch (e) {
                 console.warn('Precomputed data not found, computing on-the-fly...', e);
@@ -784,6 +1024,7 @@
             maxMatchCount = Math.max(...counts, 1);
             console.log(`Done. Max matches on a single page: ${maxMatchCount}`);
             renderPageBars();
+            renderIndexList();
         }
 
         function renderPageBars() {
@@ -795,7 +1036,7 @@
             container.innerHTML = pageMatchCounts.map((count, i) => {
                 const pageNum = i + 1;
                 const hasArtist = artistHighlightedPages.has(pageNum);
-                const height = count > 0 ? Math.max(30, (count / maxMatchCount) * 100) : 0;
+                const height = count > 0 ? 40 + (count / maxMatchCount) * 60 : 0;
                 const classes = ['page-bar'];
                 if (count === 0) classes.push('no-matches');
                 if (hasArtist) classes.push('artist-highlight');
@@ -830,7 +1071,7 @@
                     };
                     marker.onclick = (e) => {
                         e.stopPropagation();
-                        loadPage(pageNum, false);
+                        loadPage(pageNum);
                     };
                     slider.appendChild(marker);
                 }
@@ -843,6 +1084,36 @@
                 renderSearchMarkers();
             }
         });
+
+        // Pan/zoom functionality using Panzoom library
+        let panzoomInstance = null;
+
+        function initPanZoom() {
+            const img = document.getElementById('pageImage');
+            const panel = document.getElementById('imagePanel');
+
+            panzoomInstance = Panzoom(img, {
+                maxScale: 5,
+                minScale: 0.5,
+                step: 0.15
+            });
+
+            // Enable mouse wheel zoom
+            panel.addEventListener('wheel', (e) => {
+                panzoomInstance.zoomWithWheel(e, { step: 0.15 });
+            });
+
+            // Double-click to reset
+            img.addEventListener('dblclick', () => {
+                panzoomInstance.reset();
+            });
+        }
+
+        function resetImageTransform() {
+            if (panzoomInstance) {
+                panzoomInstance.reset({ animate: false });
+            }
+        }
 
         function updatePageIndicator() {
             const indicator = document.getElementById('pageIndicator');
@@ -866,10 +1137,8 @@
             // Check if we clicked directly on a bar
             if (event.target.classList.contains('page-bar')) {
                 const page = parseInt(event.target.dataset.page);
-                const isArtistHighlighted = event.target.classList.contains('artist-highlight');
                 if (page >= 1 && page <= totalPages) {
-                    // Keep artist selection if clicking on an artist-highlighted bar
-                    loadPage(page, isArtistHighlighted);
+                    loadPage(page);
                     return;
                 }
             }
@@ -913,6 +1182,7 @@
         // Initialize
         (async function init() {
             renderInitialBars();
+            initPanZoom();
             await loadArtistsSpaceData();
             const savedPage = parseInt(localStorage.getItem('jamViewerPage')) || 1;
             loadPage(savedPage);
