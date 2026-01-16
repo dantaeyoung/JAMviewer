@@ -1,6 +1,5 @@
 *.bak
 .env
 *.json.bak
-# Google Cloud credentials
-*-*.json
-public-*.json
+# Google Cloud credentials (service account keys)
+*-*-*-*-*.json
