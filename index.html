@@ -424,8 +424,19 @@
             overflow: hidden;
             position: relative;
         }
+        .image-container {
+            position: relative;
+            display: inline-block;
+        }
         .image-panel img {
             cursor: grab;
+            display: block;
+        }
+        #highlightCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            pointer-events: none;
         }
     </style>
     <script src="https://unpkg.com/@panzoom/panzoom@4.5.1/dist/panzoom.min.js"></script>
@@ -485,7 +496,10 @@
             <pre id="pageText" class="loading">Loading...</pre>
         </div>
         <div class="image-panel" id="imagePanel">
-            <img id="pageImage" src="" alt="PDF Page">
+            <div class="image-container" id="imageContainer">
+                <img id="pageImage" src="" alt="PDF Page">
+                <canvas id="highlightCanvas"></canvas>
+            </div>
         </div>
     </div>
 
@@ -502,6 +516,7 @@
         let selectedArtistForm = null;
         let allPageTexts = {}; // Cache of all page texts
         let searchResultPages = new Set(); // Pages matching current search
+        let currentOcrData = null; // OCR coordinates for current page
 
         function padPage(num) {
             return String(num).padStart(3, '0');
@@ -634,6 +649,7 @@
             });
 
             renderPageBars();
+            drawImageHighlights();
 
             // Re-highlight all matches, with the selected one in gold
             const textEl = document.getElementById('pageText');
@@ -706,6 +722,9 @@
             // Reset pan/zoom when changing pages
             resetImageTransform();
 
+            // Load OCR coordinates for image highlighting
+            currentOcrData = await loadOcrCoords(pageNum);
+
             // Load text
             const textEl = document.getElementById('pageText');
             textEl.textContent = 'Loading...';
@@ -749,6 +768,9 @@
                 } else {
                     textEl.textContent = text || '(No text extracted for this page)';
                 }
+
+                // Redraw image highlights after all data is loaded
+                drawImageHighlights();
             } catch (e) {
                 textEl.textContent = '(Error loading text)';
                 textEl.className = '';
@@ -829,6 +851,7 @@
 
             // Update timeline bar
             renderPageBars();
+            drawImageHighlights();
 
             // Highlight current page
             textEl.innerHTML = highlightText(currentPageText, currentSearchTerm);
@@ -863,6 +886,7 @@
             selectedArtistForm = null;
             updateArtistBadge(null);
             renderPageBars();
+            drawImageHighlights();
 
             // Re-render current page without artist selection
             const matches = findMatches(currentPageText);
@@ -889,6 +913,7 @@
             searchResultPages = new Set();
             updateSearchBadge(null);
             renderPageBars();
+            drawImageHighlights();
 
             // Restore artist highlights on current page
             const textEl = document.getElementById('pageText');
@@ -949,6 +974,7 @@
             const entry = artistsSpaceData.find(e => e.forms.includes(form));
             updateArtistBadge(entry ? entry.original : form);
             renderPageBars();
+            drawImageHighlights();
 
             // Update index selection
             document.querySelectorAll('.index-item').forEach(el => {
@@ -1089,10 +1115,10 @@
         let panzoomInstance = null;
 
         function initPanZoom() {
-            const img = document.getElementById('pageImage');
+            const container = document.getElementById('imageContainer');
             const panel = document.getElementById('imagePanel');
 
-            panzoomInstance = Panzoom(img, {
+            panzoomInstance = Panzoom(container, {
                 maxScale: 5,
                 minScale: 0.5,
                 step: 0.15
@@ -1104,7 +1130,7 @@
             });
 
             // Double-click to reset
-            img.addEventListener('dblclick', () => {
+            container.addEventListener('dblclick', () => {
                 panzoomInstance.reset();
             });
         }
@@ -1113,6 +1139,126 @@
             if (panzoomInstance) {
                 panzoomInstance.reset({ animate: false });
             }
+        }
+
+        // Load OCR coordinates for a page
+        async function loadOcrCoords(pageNum) {
+            try {
+                const response = await fetch(`ocr_coords/page-${pageNum}.json`);
+                if (!response.ok) return null;
+                return await response.json();
+            } catch (e) {
+                console.warn(`No OCR coords for page ${pageNum}`);
+                return null;
+            }
+        }
+
+        // Find word bounding boxes for a text match
+        function findWordBboxes(ocrData, searchText) {
+            if (!ocrData || !ocrData.words) return [];
+
+            const searchWords = searchText.toLowerCase().split(/\s+/);
+            const bboxes = [];
+            const words = ocrData.words;
+
+            // Slide through words looking for sequence matches
+            for (let i = 0; i <= words.length - searchWords.length; i++) {
+                let match = true;
+                for (let j = 0; j < searchWords.length; j++) {
+                    const ocrWord = words[i + j].text.toLowerCase().replace(/[^a-z0-9]/g, '');
+                    const searchWord = searchWords[j].replace(/[^a-z0-9]/g, '');
+                    if (ocrWord !== searchWord) {
+                        match = false;
+                        break;
+                    }
+                }
+                if (match) {
+                    // Collect bboxes for all matched words
+                    for (let j = 0; j < searchWords.length; j++) {
+                        bboxes.push(words[i + j].bbox);
+                    }
+                }
+            }
+            return bboxes;
+        }
+
+        // Draw highlights on the canvas
+        function drawImageHighlights() {
+            const canvas = document.getElementById('highlightCanvas');
+            const img = document.getElementById('pageImage');
+            const ctx = canvas.getContext('2d');
+
+            // Match canvas size to image
+            canvas.width = img.naturalWidth;
+            canvas.height = img.naturalHeight;
+            canvas.style.width = img.width + 'px';
+            canvas.style.height = img.height + 'px';
+
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            if (!currentOcrData) return;
+
+            // Calculate scale from OCR coordinates to image
+            const scaleX = img.naturalWidth / (currentOcrData.width || img.naturalWidth);
+            const scaleY = img.naturalHeight / (currentOcrData.height || img.naturalHeight);
+
+            // Draw all matched artists in light green
+            for (const match of currentMatches) {
+                if (match.matchedForm === selectedArtistForm) continue; // Skip selected, draw later
+                const bboxes = findWordBboxes(currentOcrData, match.matchedForm);
+                ctx.fillStyle = 'rgba(100, 200, 100, 0.4)'; // Light green
+                ctx.strokeStyle = 'rgba(80, 180, 80, 0.9)';
+                ctx.lineWidth = 2;
+                for (const bbox of bboxes) {
+                    const x = bbox.x * scaleX;
+                    const y = bbox.y * scaleY;
+                    const w = bbox.width * scaleX;
+                    const h = bbox.height * scaleY;
+                    ctx.fillRect(x, y, w, h);
+                    ctx.strokeRect(x, y, w, h);
+                }
+            }
+
+            // Draw selected artist in bright yellow (on top)
+            if (selectedArtistForm) {
+                const bboxes = findWordBboxes(currentOcrData, selectedArtistForm);
+                ctx.fillStyle = 'rgba(255, 230, 0, 0.5)'; // Bright yellow
+                ctx.strokeStyle = 'rgba(255, 200, 0, 1)';
+                ctx.lineWidth = 3;
+                for (const bbox of bboxes) {
+                    const x = bbox.x * scaleX;
+                    const y = bbox.y * scaleY;
+                    const w = bbox.width * scaleX;
+                    const h = bbox.height * scaleY;
+                    ctx.fillRect(x, y, w, h);
+                    ctx.strokeRect(x, y, w, h);
+                }
+            }
+
+            // Draw highlights for search term
+            if (currentSearchTerm) {
+                const bboxes = findWordBboxes(currentOcrData, currentSearchTerm);
+                ctx.fillStyle = 'rgba(255, 100, 0, 0.5)'; // Bright orange
+                ctx.strokeStyle = 'rgba(255, 80, 0, 1)';
+                ctx.lineWidth = 3;
+                for (const bbox of bboxes) {
+                    const x = bbox.x * scaleX;
+                    const y = bbox.y * scaleY;
+                    const w = bbox.width * scaleX;
+                    const h = bbox.height * scaleY;
+                    ctx.fillRect(x, y, w, h);
+                    ctx.strokeRect(x, y, w, h);
+                }
+            }
+        }
+
+        // Update canvas size when image loads
+        function setupCanvasForImage() {
+            const img = document.getElementById('pageImage');
+            img.onload = () => {
+                drawImageHighlights();
+            };
         }
 
         function updatePageIndicator() {
@@ -1183,6 +1329,7 @@
         (async function init() {
             renderInitialBars();
             initPanZoom();
+            setupCanvasForImage();
             await loadArtistsSpaceData();
             const savedPage = parseInt(localStorage.getItem('jamViewerPage')) || 1;
             loadPage(savedPage);
