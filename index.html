@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Artists in JAM Catalogue who were part of Artists Space</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #1a1a1a;
+            color: #e0e0e0;
+            height: 100vh;
+            overflow: hidden;
+        }
+        .header {
+            background: #2a2a2a;
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid #444;
+        }
+        .header h1 {
+            font-size: 18px;
+            font-weight: 500;
+        }
+        .nav {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .nav button {
+            background: #444;
+            border: none;
+            color: #fff;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .nav button:hover {
+            background: #555;
+        }
+        .nav button:disabled {
+            background: #333;
+            color: #666;
+            cursor: not-allowed;
+        }
+        .page-info {
+            font-size: 14px;
+            color: #aaa;
+            min-width: 100px;
+            text-align: center;
+        }
+        .page-input {
+            width: 60px;
+            padding: 6px 8px;
+            border: 1px solid #444;
+            border-radius: 4px;
+            background: #333;
+            color: #fff;
+            font-size: 14px;
+            text-align: center;
+        }
+        .search-box {
+            display: flex;
+            gap: 8px;
+        }
+        /* Page navigator with match density */
+        .page-nav-bar {
+            background: #222;
+            border-bottom: 1px solid #444;
+            padding: 8px 20px;
+            position: relative;
+        }
+        .page-slider-container {
+            position: relative;
+            height: 40px;
+            background: #1a1a1a;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .page-bars {
+            display: flex;
+            align-items: flex-end;
+            height: 100%;
+            gap: 1px;
+        }
+        .page-bar {
+            flex: 1;
+            background: #2d5a2d;
+            min-height: 2px;
+            transition: background 0.1s;
+        }
+        .page-bar:hover {
+            background: #4a8a4a;
+        }
+        .page-bar.no-matches {
+            background: #333;
+            min-height: 2px;
+        }
+        .page-bar.artist-highlight {
+            background: #a90;
+        }
+        .page-indicator {
+            position: absolute;
+            top: 0;
+            width: 3px;
+            height: 100%;
+            background: #fff;
+            pointer-events: none;
+            box-shadow: 0 0 4px rgba(255,255,255,0.5);
+        }
+        .search-input {
+            padding: 6px 12px;
+            border: 1px solid #444;
+            border-radius: 4px;
+            background: #333;
+            color: #fff;
+            font-size: 14px;
+            width: 200px;
+        }
+        .container {
+            display: flex;
+            height: calc(100vh - 114px);
+        }
+        /* Left panel - Matches */
+        .matches-panel {
+            width: 280px;
+            min-width: 280px;
+            background: #1e1e1e;
+            border-right: 1px solid #444;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .matches-header {
+            background: #2d5a2d;
+            padding: 12px 16px;
+            font-weight: 500;
+            font-size: 14px;
+            color: #8f8;
+            flex-shrink: 0;
+        }
+        .matches-header.no-matches {
+            background: #333;
+            color: #888;
+        }
+        .matches-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 8px;
+        }
+        .match-item {
+            padding: 8px 12px;
+            font-size: 13px;
+            border-radius: 4px;
+            margin-bottom: 4px;
+            background: #2a2a2a;
+            cursor: pointer;
+            border-left: 3px solid transparent;
+        }
+        .match-item:hover {
+            background: #333;
+            border-left-color: #4a8;
+        }
+        .match-item.selected {
+            background: #5a4a00;
+            border-left-color: #da0;
+        }
+        .match-item .matched-form {
+            color: #777;
+            font-size: 11px;
+            display: block;
+            margin-top: 2px;
+        }
+        .no-matches-msg {
+            padding: 20px;
+            color: #666;
+            font-style: italic;
+            text-align: center;
+        }
+        /* Middle panel - Text */
+        .text-panel {
+            flex: 1;
+            overflow: auto;
+            padding: 20px;
+            background: #1a1a1a;
+            border-right: 1px solid #444;
+        }
+        .text-panel pre {
+            font-family: 'SF Mono', Monaco, 'Courier New', monospace;
+            font-size: 13px;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            color: #d4d4d4;
+        }
+        .loading {
+            color: #888;
+            font-style: italic;
+        }
+        /* Right panel - Image */
+        .image-panel {
+            flex: 1;
+            overflow: auto;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            background: #111;
+        }
+        .image-panel img {
+            max-width: 100%;
+            max-height: calc(100vh - 100px);
+            object-fit: contain;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+        }
+        .highlight {
+            background: #5a5a00;
+            color: #fff;
+        }
+        .artist-match {
+            background: #2d5a2d;
+            color: #8f8;
+            border-radius: 2px;
+            padding: 0 2px;
+            cursor: pointer;
+        }
+        .artist-match:hover {
+            background: #3a6a3a;
+        }
+        .artist-match.selected {
+            background: #8a7a00;
+            color: #ffd;
+        }
+        .artist-match.selected:hover {
+            background: #9a8a10;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Artists in JAM Catalogue who were part of Artists Space</h1>
+        <div class="nav">
+            <button id="prevBtn" onclick="prevPage()">&larr; Previous</button>
+            <span class="page-info">
+                Page <input type="number" id="pageInput" class="page-input" min="1" max="159" value="1" onchange="goToPage(this.value)"> of 159
+            </span>
+            <button id="nextBtn" onclick="nextPage()">Next &rarr;</button>
+        </div>
+        <div class="search-box">
+            <input type="text" id="searchInput" class="search-input" placeholder="Search text..." onkeyup="handleSearchKey(event)">
+            <button onclick="searchText()">Search</button>
+        </div>
+    </div>
+    <div class="page-nav-bar">
+        <div class="page-slider-container" id="pageSlider" onclick="handleSliderClick(event)" onmousemove="handleSliderHover(event)">
+            <div class="page-bars" id="pageBars"></div>
+            <div class="page-indicator" id="pageIndicator"></div>
+        </div>
+    </div>
+    <div class="container">
+        <div class="matches-panel">
+            <div id="matchesHeader" class="matches-header no-matches">
+                Artists Space Matches (0)
+            </div>
+            <div id="matchesList" class="matches-list">
+                <div class="no-matches-msg">No matches on this page</div>
+            </div>
+        </div>
+        <div class="text-panel">
+            <pre id="pageText" class="loading">Loading...</pre>
+        </div>
+        <div class="image-panel">
+            <img id="pageImage" src="" alt="PDF Page">
+        </div>
+    </div>
+
+    <script>
+        let currentPage = 1;
+        const totalPages = 159;
+        let currentSearchTerm = '';
+        let artistsSpaceData = [];
+        let currentMatches = [];
+        let currentPageText = '';
+        let pageMatchCounts = new Array(totalPages).fill(0);
+        let maxMatchCount = 1;
+        let artistToPages = {}; // Map of matchedForm -> [page numbers]
+        let selectedArtistForm = null;
+
+        function padPage(num) {
+            return String(num).padStart(3, '0');
+        }
+
+        function normalize(s) {
+            return s.toLowerCase().replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, ' ').trim();
+        }
+
+        // Load Artists Space data
+        async function loadArtistsSpaceData() {
+            try {
+                const response = await fetch('artists_space.json?v=' + Date.now());
+                artistsSpaceData = await response.json();
+                console.log(`Loaded ${artistsSpaceData.length} Artists Space entries`);
+            } catch (e) {
+                console.error('Failed to load Artists Space data:', e);
+            }
+        }
+
+        // Additional client-side blocklist for common false positives
+        const BLOCKLIST = new Set([
+            'artist', 'artists', 'young', 'black', 'white', 'brown', 'green',
+            'art', 'arts', 'film', 'video', 'music', 'dance', 'space', 'gallery',
+            'museum', 'project', 'group', 'exhibition', 'work', 'works', 'series'
+        ]);
+
+        function findMatches(text) {
+            const normalizedText = normalize(text);
+            const matches = [];
+            const seen = new Set();
+
+            for (const entry of artistsSpaceData) {
+                for (const form of entry.forms) {
+                    // Skip short forms (need at least 8 chars for "first last")
+                    if (form.length < 8) continue;
+
+                    // Skip if form is just blocklisted words
+                    const words = form.split(' ');
+                    if (words.every(w => BLOCKLIST.has(w))) continue;
+
+                    // Use word boundary matching
+                    const regex = new RegExp(`\\b${escapeRegex(form)}\\b`, 'i');
+                    if (regex.test(normalizedText) && !seen.has(entry.original)) {
+                        seen.add(entry.original);
+                        matches.push({
+                            original: entry.original,
+                            matchedForm: form
+                        });
+                        break;
+                    }
+                }
+            }
+
+            return matches;
+        }
+
+        function highlightArtistMatches(text, matches, addScrollTarget = false) {
+            let html = escapeHtml(text);
+
+            // Sort matches by length (longest first) to avoid partial replacements
+            const sortedMatches = [...matches].sort((a, b) => b.matchedForm.length - a.matchedForm.length);
+
+            let firstMatch = true;
+            for (const match of sortedMatches) {
+                // Split the form into words and allow any whitespace between them
+                const words = match.matchedForm.split(' ');
+                // Build regex that allows whitespace/newlines between words
+                const pattern = words.map(w => escapeRegex(w)).join('[\\s\\n]+');
+                const regex = new RegExp(`\\b(${pattern})\\b`, 'gi');
+                const clickHandler = `onclick="highlightMatch('${escapeAttr(match.matchedForm)}')"`;
+
+                if (addScrollTarget && firstMatch) {
+                    // Add ID to first match for scrolling
+                    html = html.replace(regex, (m) => {
+                        const result = firstMatch
+                            ? `<span id="artist-match-target" class="artist-match" ${clickHandler}>${m}</span>`
+                            : `<span class="artist-match" ${clickHandler}>${m}</span>`;
+                        firstMatch = false;
+                        return result;
+                    });
+                } else {
+                    html = html.replace(regex, `<span class="artist-match" ${clickHandler}>$1</span>`);
+                }
+            }
+
+            return html;
+        }
+
+        function updateMatchesPanel(matches) {
+            const header = document.getElementById('matchesHeader');
+            const list = document.getElementById('matchesList');
+
+            currentMatches = matches;
+            header.textContent = `Artists Space Matches (${matches.length})`;
+            header.className = matches.length > 0 ? 'matches-header' : 'matches-header no-matches';
+
+            if (matches.length === 0) {
+                list.innerHTML = '<div class="no-matches-msg">No matches on this page</div>';
+                return;
+            }
+
+            list.innerHTML = matches.map(m => `
+                <div class="match-item" data-form="${escapeAttr(m.matchedForm)}" onclick="highlightMatch('${escapeAttr(m.matchedForm)}')">
+                    ${escapeHtml(m.original)}
+                    <span class="matched-form">matched: "${escapeHtml(m.matchedForm)}"</span>
+                </div>
+            `).join('');
+        }
+
+        function highlightMatch(form) {
+            // Update selected state in matches list
+            document.querySelectorAll('.match-item').forEach(el => {
+                el.classList.remove('selected');
+                if (el.dataset.form === form) {
+                    el.classList.add('selected');
+                }
+            });
+
+            // Update selected artist and re-render page bars
+            selectedArtistForm = form;
+            renderPageBars();
+
+            // Re-highlight all matches, with the selected one in gold
+            const textEl = document.getElementById('pageText');
+            textEl.innerHTML = highlightArtistMatchesWithSelection(currentPageText, currentMatches, form);
+
+            // Scroll to the selected match
+            setTimeout(() => {
+                const target = document.getElementById('artist-match-target');
+                if (target) target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }, 50);
+        }
+
+        function highlightArtistMatchesWithSelection(text, matches, selectedForm) {
+            let html = escapeHtml(text);
+
+            // Sort matches by length (longest first) to avoid partial replacements
+            const sortedMatches = [...matches].sort((a, b) => b.matchedForm.length - a.matchedForm.length);
+
+            for (const match of sortedMatches) {
+                const isSelected = match.matchedForm === selectedForm;
+                const words = match.matchedForm.split(' ');
+                const pattern = words.map(w => escapeRegex(w)).join('[\\s\\n]+');
+                const regex = new RegExp(`\\b(${pattern})\\b`, 'gi');
+                const clickHandler = `onclick="highlightMatch('${escapeAttr(match.matchedForm)}')"`;
+
+                if (isSelected) {
+                    let first = true;
+                    html = html.replace(regex, (m) => {
+                        const id = first ? ' id="artist-match-target"' : '';
+                        first = false;
+                        return `<span${id} class="artist-match selected" ${clickHandler}>${m}</span>`;
+                    });
+                } else {
+                    html = html.replace(regex, `<span class="artist-match" ${clickHandler}>$1</span>`);
+                }
+            }
+
+            return html;
+        }
+
+        function escapeAttr(s) {
+            return s.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+        }
+
+        async function loadPage(pageNum, keepArtistSelection = false) {
+            currentPage = pageNum;
+            currentSearchTerm = '';
+            if (!keepArtistSelection) {
+                selectedArtistForm = null; // Clear artist selection when changing pages
+            }
+            localStorage.setItem('jamViewerPage', pageNum);
+            document.getElementById('pageInput').value = pageNum;
+            document.getElementById('prevBtn').disabled = pageNum <= 1;
+            document.getElementById('nextBtn').disabled = pageNum >= totalPages;
+            updatePageIndicator();
+            renderPageBars(); // Re-render bars
+
+            // Load image
+            const img = document.getElementById('pageImage');
+            img.src = `pages/page-${padPage(pageNum)}.jpg`;
+
+            // Load text
+            const textEl = document.getElementById('pageText');
+            textEl.textContent = 'Loading...';
+            textEl.className = 'loading';
+
+            try {
+                const response = await fetch(`text/page-${pageNum}.txt`);
+                let text = await response.text();
+                currentPageText = text;
+                textEl.className = '';
+
+                // Find Artists Space matches
+                const matches = findMatches(text);
+                updateMatchesPanel(matches);
+
+                // Apply highlighting
+                if (matches.length > 0) {
+                    if (selectedArtistForm) {
+                        // Highlight with selected artist in gold
+                        textEl.innerHTML = highlightArtistMatchesWithSelection(text, matches, selectedArtistForm);
+                        // Also highlight the match item in the sidebar
+                        document.querySelectorAll('.match-item').forEach(el => {
+                            el.classList.toggle('selected', el.dataset.form === selectedArtistForm);
+                        });
+                        // Scroll to the selected artist's first occurrence
+                        setTimeout(() => {
+                            const target = document.getElementById('artist-match-target');
+                            if (target) target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        }, 50);
+                    } else {
+                        textEl.innerHTML = highlightArtistMatches(text, matches);
+                    }
+                } else {
+                    textEl.textContent = text || '(No text extracted for this page)';
+                }
+            } catch (e) {
+                textEl.textContent = '(Error loading text)';
+                textEl.className = '';
+                updateMatchesPanel([]);
+            }
+        }
+
+        function highlightText(text, term) {
+            if (!term) return escapeHtml(text);
+            const regex = new RegExp(`(${escapeRegex(term)})`, 'gi');
+            return escapeHtml(text).replace(regex, '<span class="highlight">$1</span>');
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function escapeRegex(string) {
+            return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        }
+
+        function prevPage() {
+            if (currentPage > 1) {
+                loadPage(currentPage - 1);
+            }
+        }
+
+        function nextPage() {
+            if (currentPage < totalPages) {
+                loadPage(currentPage + 1);
+            }
+        }
+
+        function goToPage(page) {
+            const pageNum = parseInt(page);
+            if (pageNum >= 1 && pageNum <= totalPages) {
+                loadPage(pageNum);
+            }
+        }
+
+        function searchText() {
+            currentSearchTerm = document.getElementById('searchInput').value;
+            const textEl = document.getElementById('pageText');
+            if (currentSearchTerm) {
+                textEl.innerHTML = highlightText(currentPageText, currentSearchTerm);
+            } else {
+                // Restore artist highlights
+                const matches = findMatches(currentPageText);
+                if (matches.length > 0) {
+                    textEl.innerHTML = highlightArtistMatches(currentPageText, matches);
+                } else {
+                    textEl.textContent = currentPageText;
+                }
+            }
+        }
+
+        function handleSearchKey(event) {
+            if (event.key === 'Enter') {
+                searchText();
+            }
+        }
+
+        // Keyboard navigation
+        document.addEventListener('keydown', (e) => {
+            if (e.target.tagName === 'INPUT') return;
+            if (e.key === 'ArrowLeft') prevPage();
+            if (e.key === 'ArrowRight') nextPage();
+        });
+
+        // Pre-compute matches for all pages
+        async function precomputeAllMatches() {
+            console.log('Pre-computing matches for all pages...');
+            const counts = [];
+            const artistPages = {};
+
+            for (let i = 1; i <= totalPages; i++) {
+                try {
+                    const response = await fetch(`text/page-${i}.txt`);
+                    const text = await response.text();
+                    const matches = findMatches(text);
+                    counts.push(matches.length);
+
+                    // Track which pages each artist appears on
+                    for (const match of matches) {
+                        if (!artistPages[match.matchedForm]) {
+                            artistPages[match.matchedForm] = [];
+                        }
+                        artistPages[match.matchedForm].push(i);
+                    }
+                } catch (e) {
+                    counts.push(0);
+                }
+
+                // Update progress every 20 pages
+                if (i % 20 === 0) {
+                    console.log(`Scanned ${i}/${totalPages} pages...`);
+                }
+            }
+
+            pageMatchCounts = counts;
+            artistToPages = artistPages;
+            maxMatchCount = Math.max(...counts, 1);
+            console.log(`Done. Max matches on a single page: ${maxMatchCount}`);
+            renderPageBars();
+        }
+
+        function renderPageBars() {
+            const container = document.getElementById('pageBars');
+            const highlightedPages = selectedArtistForm && artistToPages[selectedArtistForm]
+                ? new Set(artistToPages[selectedArtistForm])
+                : new Set();
+
+            container.innerHTML = pageMatchCounts.map((count, i) => {
+                const pageNum = i + 1;
+                const height = count > 0 ? Math.max(30, (count / maxMatchCount) * 100) : 0;
+                const classes = ['page-bar'];
+                if (count === 0) classes.push('no-matches');
+                if (highlightedPages.has(pageNum)) classes.push('artist-highlight');
+                return `<div class="${classes.join(' ')}" data-page="${pageNum}" style="height: ${height}%" title="Page ${pageNum}: ${count} matches"></div>`;
+            }).join('');
+            updatePageIndicator();
+        }
+
+        function updatePageIndicator() {
+            const indicator = document.getElementById('pageIndicator');
+            const slider = document.getElementById('pageSlider');
+            const currentBar = document.querySelector(`.page-bar[data-page="${currentPage}"]`);
+
+            if (currentBar) {
+                // Position based on actual bar location
+                const sliderRect = slider.getBoundingClientRect();
+                const barRect = currentBar.getBoundingClientRect();
+                const barCenter = barRect.left + barRect.width / 2 - sliderRect.left;
+                indicator.style.left = `${barCenter - 1.5}px`;
+            } else {
+                // Fallback to percentage calculation
+                const percent = ((currentPage - 1) / (totalPages - 1)) * 100;
+                indicator.style.left = `calc(${percent}% - 1.5px)`;
+            }
+        }
+
+        function handleSliderClick(event) {
+            // Check if we clicked directly on a bar
+            if (event.target.classList.contains('page-bar')) {
+                const page = parseInt(event.target.dataset.page);
+                const isHighlighted = event.target.classList.contains('artist-highlight');
+                if (page >= 1 && page <= totalPages) {
+                    // Keep artist selection if clicking on a highlighted bar
+                    loadPage(page, isHighlighted);
+                    return;
+                }
+            }
+
+            // Otherwise calculate from position - clears selection
+            const slider = document.getElementById('pageSlider');
+            const rect = slider.getBoundingClientRect();
+            const x = event.clientX - rect.left;
+            const percent = x / rect.width;
+            const page = Math.max(1, Math.min(totalPages, Math.ceil(percent * totalPages)));
+            loadPage(page);
+        }
+
+        function handleSliderHover(event) {
+            // Could add tooltip preview here
+        }
+
+        // Drag support for slider
+        let isDragging = false;
+        document.getElementById('pageSlider').addEventListener('mousedown', (e) => {
+            isDragging = true;
+            handleSliderClick(e);
+        });
+        document.addEventListener('mousemove', (e) => {
+            if (isDragging) {
+                handleSliderClick(e);
+            }
+        });
+        document.addEventListener('mouseup', () => {
+            isDragging = false;
+        });
+
+        // Render initial empty bars
+        function renderInitialBars() {
+            const container = document.getElementById('pageBars');
+            container.innerHTML = Array(totalPages).fill(0).map((_, i) =>
+                `<div class="page-bar no-matches" data-page="${i + 1}" style="height: 2px" title="Page ${i + 1}: scanning..."></div>`
+            ).join('');
+        }
+
+        // Initialize
+        (async function init() {
+            renderInitialBars();
+            await loadArtistsSpaceData();
+            const savedPage = parseInt(localStorage.getItem('jamViewerPage')) || 1;
+            loadPage(savedPage);
+            // Pre-compute matches in background
+            precomputeAllMatches();
+        })();
+    </script>
+</body>
+</html>
