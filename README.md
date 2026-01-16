@@ -1,5 +1,7 @@
 # JAM Catalogue × Artists Space Viewer
 
+(Vibe-engineered)
+
 A web-based viewer for the Just Above Midtown (JAM) Gallery catalogue that cross-references artists with the "5000 Artists Return to Artists Space" dataset.
 
 ## Overview
