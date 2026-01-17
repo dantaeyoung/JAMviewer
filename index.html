@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Artists in JAM Catalogue who were part of Artists Space</title>
+    <title>JAM Catalogue x Artists Space Index cross-reference viewer</title>
     <style>
         * {
             box-sizing: border-box;
@@ -33,7 +33,7 @@
         .header-controls {
             display: flex;
             align-items: center;
-            gap: 20px;
+            gap: 12px;
         }
         /* Header Layer 2: Timeline */
         .header-secondary {
@@ -47,25 +47,25 @@
         .nav {
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 3px;
             flex-shrink: 0;
         }
         .page-info {
             display: flex;
             align-items: center;
-            gap: 4px;
+            gap: 3px;
             white-space: nowrap;
-            font-size: 16px;
+            font-size: 12px;
             color: #aaa;
         }
         .nav button {
             background: #444;
             border: none;
             color: #fff;
-            padding: 6px 10px;
-            border-radius: 4px;
+            padding: 4px 7px;
+            border-radius: 3px;
             cursor: pointer;
-            font-size: 12px;
+            font-size: 10px;
         }
         .nav button:hover {
             background: #555;
@@ -76,13 +76,13 @@
             cursor: not-allowed;
         }
         .page-input {
-            width: 60px;
-            padding: 4px 6px;
+            width: 42px;
+            padding: 3px 4px;
             border: 1px solid #444;
-            border-radius: 4px;
+            border-radius: 3px;
             background: #333;
             color: #fff;
-            font-size: 16px;
+            font-size: 12px;
             text-align: center;
         }
         /* Timeline bar */
@@ -93,6 +93,40 @@
             background: #1a1a1a;
             border-radius: 4px;
             cursor: pointer;
+        }
+        .timeline-tooltip {
+            position: absolute;
+            bottom: 100%;
+            left: 0;
+            background: rgba(0, 0, 0, 0.85);
+            color: #fff;
+            font-size: 11px;
+            padding: 4px 8px;
+            border-radius: 4px;
+            white-space: nowrap;
+            pointer-events: none;
+            transform: translateX(-50%);
+            margin-bottom: 6px;
+            z-index: 100;
+            display: none;
+        }
+        .timeline-tooltip::after {
+            content: '';
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 5px solid transparent;
+            border-top-color: rgba(0, 0, 0, 0.85);
+        }
+        .timeline-tooltip .tooltip-count {
+            display: inline-block;
+            background: #fff;
+            color: #000;
+            font-weight: 700;
+            padding: 1px 5px;
+            border-radius: 8px;
+            margin: 0 3px;
         }
         .search-box {
             display: flex;
@@ -110,6 +144,7 @@
             overflow: hidden;
         }
         .index-header {
+            height: 75px;
             background: #333;
             padding: 12px 16px;
             font-weight: 500;
@@ -258,6 +293,7 @@
             overflow: hidden;
         }
         .matches-header {
+            height: 75px;
             background: #2d5a2d;
             padding: 12px 16px;
             font-weight: 500;
@@ -268,6 +304,19 @@
         .matches-header.no-matches {
             background: #333;
             color: #888;
+        }
+        .matches-header .count-badge {
+            display: inline-block;
+            background: #fff;
+            color: #2d5a2d;
+            font-weight: 700;
+            padding: 2px 8px;
+            border-radius: 10px;
+            margin: 0 2px;
+        }
+        .matches-header.no-matches .count-badge {
+            background: #666;
+            color: #333;
         }
         .matches-list {
             flex: 1;
@@ -310,6 +359,19 @@
             padding: 20px;
             background: #1a1a1a;
             border-right: 1px solid #444;
+            position: relative;
+        }
+        .text-panel-badge {
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            background: rgba(0, 0, 0, 0.6);
+            color: #aaa;
+            font-size: 10px;
+            padding: 3px 6px;
+            border-radius: 3px;
+            z-index: 10;
+            pointer-events: none;
         }
         .text-panel pre {
             font-family: 'SF Mono', Monaco, 'Courier New', monospace;
@@ -363,9 +425,18 @@
         .artist-match.selected:hover {
             background: #9a8a10;
         }
+        /* Badges container - fixed width to prevent layout shift */
+        .badges-container {
+            width: 280px;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 8px;
+            flex-shrink: 0;
+        }
         /* Selected artist badge */
         .artist-badge {
-            display: flex;
+            display: none;
             align-items: center;
             gap: 6px;
             background: #5a4a00;
@@ -373,10 +444,9 @@
             padding: 5px 12px;
             border-radius: 4px;
             font-size: 13px;
-            visibility: hidden;
         }
         .artist-badge.visible {
-            visibility: visible;
+            display: flex;
         }
         .artist-badge-close {
             background: none;
@@ -393,7 +463,7 @@
         }
         /* Search badge */
         .search-badge {
-            display: flex;
+            display: none;
             align-items: center;
             gap: 6px;
             background: #5a3a1a;
@@ -401,10 +471,9 @@
             padding: 5px 12px;
             border-radius: 4px;
             font-size: 13px;
-            visibility: hidden;
         }
         .search-badge.visible {
-            visibility: visible;
+            display: flex;
         }
         .search-badge-close {
             background: none;
@@ -423,6 +492,18 @@
         .image-panel {
             overflow: hidden;
             position: relative;
+        }
+        .image-panel-badge {
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            background: rgba(0, 0, 0, 0.6);
+            color: #aaa;
+            font-size: 10px;
+            padding: 3px 6px;
+            border-radius: 3px;
+            z-index: 10;
+            pointer-events: none;
         }
         .image-container {
             position: relative;
@@ -511,22 +592,17 @@
 <body>
     <!-- Header -->
     <div class="header-primary">
-        <h1>JAM Catalogue × Artists Space <button class="help-btn" onclick="toggleHelpModal()">?</button></h1>
+        <h1>JAM Catalogue x Artists Space Index cross-reference viewer <button class="help-btn" onclick="toggleHelpModal()">?</button></h1>
         <div class="header-controls">
-            <div class="artist-badge" id="artistBadge">
-                <span id="artistBadgeName"></span>
-                <button class="artist-badge-close" onclick="clearArtistSelection()">&times;</button>
-            </div>
-            <div class="search-badge" id="searchBadge">
-                <span id="searchBadgeTerm"></span>
-                <button class="search-badge-close" onclick="clearSearch()">&times;</button>
-            </div>
-            <div class="nav">
-                <button id="prevBtn" onclick="prevPage()">&larr;</button>
-                <span class="page-info">
-                    <input type="number" id="pageInput" class="page-input" min="1" max="159" value="1" onchange="goToPage(this.value)"> / 159
-                </span>
-                <button id="nextBtn" onclick="nextPage()">&rarr;</button>
+            <div class="badges-container">
+                <div class="artist-badge" id="artistBadge">
+                    <span id="artistBadgeName"></span>
+                    <button class="artist-badge-close" onclick="clearArtistSelection()">&times;</button>
+                </div>
+                <div class="search-badge" id="searchBadge">
+                    <span id="searchBadgeTerm"></span>
+                    <button class="search-badge-close" onclick="clearSearch()">&times;</button>
+                </div>
             </div>
             <div class="search-box">
                 <input type="text" id="searchInput" class="search-input" placeholder="Search text..." onkeyup="handleSearchKey(event)">
@@ -537,9 +613,17 @@
 
     <!-- Timeline -->
     <div class="header-secondary">
-        <div class="page-slider-container" id="pageSlider" onclick="handleSliderClick(event)" onmousemove="handleSliderHover(event)">
+        <div class="nav">
+            <button id="prevBtn" onclick="prevPage()">&larr;</button>
+            <span class="page-info">
+                <input type="number" id="pageInput" class="page-input" min="1" max="159" value="1" onchange="goToPage(this.value)"> / 159
+            </span>
+            <button id="nextBtn" onclick="nextPage()">&rarr;</button>
+        </div>
+        <div class="page-slider-container" id="pageSlider" onclick="handleSliderClick(event)" onmousemove="handleSliderHover(event)" onmouseleave="hideTimelineTooltip()">
             <div class="page-bars" id="pageBars"></div>
             <div class="page-indicator" id="pageIndicator"></div>
+            <div class="timeline-tooltip" id="timelineTooltip"></div>
         </div>
     </div>
 
@@ -553,20 +637,22 @@
         <!-- Page Matches -->
         <div class="matches-panel">
             <div id="matchesHeader" class="matches-header no-matches">
-                Artists Space Matches (0)
+                On this page: <span class="count-badge">0</span> artists<br>from the Artists Space index
             </div>
             <div id="matchesList" class="matches-list">
                 <div class="no-matches-msg">No matches on this page</div>
             </div>
         </div>
-        <div class="text-panel">
-            <pre id="pageText" class="loading">Loading...</pre>
-        </div>
         <div class="image-panel" id="imagePanel">
+            <div class="image-panel-badge">JAM Catalogue</div>
             <div class="image-container" id="imageContainer">
                 <img id="pageImage" src="" alt="PDF Page">
                 <canvas id="highlightCanvas"></canvas>
             </div>
+        </div>
+        <div class="text-panel">
+            <div class="text-panel-badge">JAM Catalogue Text</div>
+            <pre id="pageText" class="loading">Loading...</pre>
         </div>
     </div>
 
@@ -577,7 +663,7 @@
             <h2>About This Project</h2>
             <p><strong>Who are the artists in the JAM catalogue who were also part of Artists Space?</strong></p>
             <p>This viewer cross-references the <em>Just Above Midtown: Changing Spaces</em> exhibition catalogue (MoMA, 2022) with the "5000 Artists Return to Artists Space" publication.</p>
-            <p><strong>Just Above Midtown (JAM)</strong> was a pioneering New York gallery founded by Linda Goode Bryant in 1974, dedicated to exhibiting work by African American artists and artists of color.</p>
+            <p><strong>Just Above Midtown (JAM)</strong> was a New York gallery founded by Linda Goode Bryant in 1974, dedicated to exhibiting work by African American artists and artists of color.</p>
             <hr style="border: none; border-top: 1px solid #444; margin: 16px 0;">
             <p>Artists who appear in both are highlighted in <span style="color: #8f8;">green</span> throughout the catalogue. Click on any name to see all pages where they appear, highlighted in <span style="color: #ffe033;">yellow</span>.</p>
             <p><strong>Controls:</strong> Use arrow keys or click the timeline to navigate. <span style="color: #ff6a00;">Search</span> for any text (results highlighted in orange). Click artists to track them across pages.</p>
@@ -703,7 +789,7 @@
             const list = document.getElementById('matchesList');
 
             currentMatches = matches;
-            header.textContent = `Matching on this page (${matches.length})`;
+            header.innerHTML = `On this page: <span class="count-badge">${matches.length}</span> artist${matches.length !== 1 ? 's' : ''}<br>from the Artists Space index`;
             header.className = matches.length > 0 ? 'matches-header' : 'matches-header no-matches';
 
             if (matches.length === 0) {
@@ -923,13 +1009,6 @@
 
             const textEl = document.getElementById('pageText');
 
-            // Clear artist selection when searching
-            selectedArtistForm = null;
-            updateArtistBadge(null);
-            document.querySelectorAll('.match-item').forEach(el => {
-                el.classList.remove('selected');
-            });
-
             // Search across all pages
             searchResultPages = new Set();
             const termLower = term.toLowerCase();
@@ -1058,7 +1137,7 @@
             `}).join('');
 
             // Update header with count
-            document.querySelector('.index-header').textContent = `All Matches (${artistEntries.length})`;
+          document.querySelector('.index-header').textContent = `All Matches in both JAM and AS Index (${artistEntries.length})`;
         }
 
         function selectArtistFromIndex(form) {
@@ -1225,6 +1304,55 @@
             container.addEventListener('dblclick', () => {
                 panzoomInstance.reset();
             });
+
+            // Click on artist names in image
+            container.addEventListener('click', handleImageClick);
+            container.addEventListener('mousemove', handleImageHover);
+        }
+
+        function isOverArtist(event) {
+            if (!currentOcrData || currentMatches.length === 0) return null;
+
+            const img = document.getElementById('pageImage');
+            const imgRect = img.getBoundingClientRect();
+
+            const clickX = event.clientX - imgRect.left;
+            const clickY = event.clientY - imgRect.top;
+
+            const scaleToNatural = img.naturalWidth / imgRect.width;
+            const naturalX = clickX * scaleToNatural;
+            const naturalY = clickY * scaleToNatural;
+
+            const scaleX = img.naturalWidth / (currentOcrData.width || img.naturalWidth);
+            const scaleY = img.naturalHeight / (currentOcrData.height || img.naturalHeight);
+
+            for (const match of currentMatches) {
+                const bboxes = findWordBboxes(currentOcrData, match.matchedForm);
+                for (const bbox of bboxes) {
+                    const x = bbox.x * scaleX;
+                    const y = bbox.y * scaleY;
+                    const w = bbox.width * scaleX;
+                    const h = bbox.height * scaleY;
+
+                    if (naturalX >= x && naturalX <= x + w && naturalY >= y && naturalY <= y + h) {
+                        return match;
+                    }
+                }
+            }
+            return null;
+        }
+
+        function handleImageHover(event) {
+            const container = document.getElementById('imageContainer');
+            const match = isOverArtist(event);
+            container.style.cursor = match ? 'pointer' : 'grab';
+        }
+
+        function handleImageClick(event) {
+            const match = isOverArtist(event);
+            if (match) {
+                highlightMatch(match.matchedForm);
+            }
         }
 
         function resetImageTransform() {
@@ -1391,7 +1519,27 @@
         }
 
         function handleSliderHover(event) {
-            // Could add tooltip preview here
+            const tooltip = document.getElementById('timelineTooltip');
+            const slider = document.getElementById('pageSlider');
+            const sliderRect = slider.getBoundingClientRect();
+
+            // Find which bar we're hovering over
+            const bar = event.target.closest('.page-bar');
+            if (bar) {
+                const pageNum = parseInt(bar.dataset.page);
+                const count = pageMatchCounts[pageNum - 1] || 0;
+                const barRect = bar.getBoundingClientRect();
+
+                tooltip.innerHTML = `Page ${pageNum}: <span class="tooltip-count">${count}</span> match${count !== 1 ? 'es' : ''}`;
+                tooltip.style.left = (barRect.left - sliderRect.left + barRect.width / 2) + 'px';
+                tooltip.style.display = 'block';
+            } else {
+                tooltip.style.display = 'none';
+            }
+        }
+
+        function hideTimelineTooltip() {
+            document.getElementById('timelineTooltip').style.display = 'none';
         }
 
         // Drag support for slider
